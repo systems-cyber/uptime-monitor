@@ -1,0 +1,15 @@
+{
+  "lastKeepalive": "2026-11-25T21:38:06.465Z",
+  "sites": {
+    "f912adec5261": {
+      "status": "up",
+      "fails": 0,
+      "failingSince": null
+    },
+    "576c2464ecc2": {
+      "status": "up",
+      "fails": 0,
+      "failingSince": null
+    }
+  }
+}
