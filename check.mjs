@@ -16,6 +16,9 @@ const WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 const DRY_RUN = Boolean(process.env.DRY_RUN);
 const KEEPALIVE_MS = 7 * 24 * 60 * 60 * 1000; // touch state.json weekly so GitHub keeps the schedule on
+const DEFAULT_USER_AGENT = process.env.GITHUB_REPOSITORY
+  ? `uptime-check/1.0 (+${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY})`
+  : 'uptime-check/1.0';
 const RUN_URL = process.env.GITHUB_RUN_ID
   ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
   : null;
@@ -86,8 +89,8 @@ async function checkOnce(site) {
       redirect: 'follow',
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: {
-        // Browser-like by default (some firewalls block bot-looking requests); a site can override it.
-        'user-agent': site.userAgent ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 uptime-check/1.0',
+        // Identify honestly: some firewalls block or break on imitation browser user agents.
+        'user-agent': site.userAgent ?? DEFAULT_USER_AGENT,
         accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'accept-language': 'en-AU,en;q=0.9',
       },

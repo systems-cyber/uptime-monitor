@@ -42,7 +42,7 @@ If neither is set, the run fails, so a missing list can't go unnoticed.
 | `name` | Shown in emails. Defaults to the domain. |
 | `keyword` | Optional. The page must contain this text, which catches "200 OK but broken" pages. |
 | `expectStatus` | Optional. A status code, or a list such as `[200, 403]`, that counts as up. Without it, any status under 400 counts as up. |
-| `userAgent` | Optional. Sends a different user agent. Some server firewalls drop browser-like requests that don't come from a real browser; `"uptime-check/1.0"` usually gets through. |
+| `userAgent` | Optional. Overrides the default user agent (`uptime-check/1.0` plus the repo link) for a site whose firewall blocks it. |
 
 ### 3. Build the n8n workflow (2 nodes)
 
