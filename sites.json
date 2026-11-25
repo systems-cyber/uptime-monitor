@@ -1,0 +1,4 @@
+[
+  { "name": "Example site", "url": "https://example.com" },
+  { "name": "Example site with text check", "url": "https://example.org", "keyword": "Example Domain" }
+]
