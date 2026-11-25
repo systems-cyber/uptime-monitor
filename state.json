@@ -18,8 +18,8 @@
     },
     "a8bac9447909": {
       "status": "up",
-      "fails": 1,
-      "failingSince": "2026-11-25T21:59:43.676Z"
+      "fails": 0,
+      "failingSince": null
     },
     "86c6fcb41924": {
       "status": "up",
@@ -68,8 +68,8 @@
     },
     "e01e901c8d8b": {
       "status": "up",
-      "fails": 1,
-      "failingSince": "2026-11-25T21:59:43.676Z"
+      "fails": 0,
+      "failingSince": null
     },
     "b03b9d41ab7d": {
       "status": "up",
@@ -98,8 +98,8 @@
     },
     "2df9c1db8a1d": {
       "status": "up",
-      "fails": 1,
-      "failingSince": "2026-11-25T21:59:43.676Z"
+      "fails": 0,
+      "failingSince": null
     }
   }
 }
