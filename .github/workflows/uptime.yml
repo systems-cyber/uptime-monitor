@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '*/5 * * * *' # every 5 minutes (GitHub's minimum; runs can start late)
   workflow_dispatch: # lets you run it by hand from the Actions tab
+    inputs:
+      test_alert:
+        description: 'Send a test alert email only (checks no sites)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write # needed to save state.json back to the repo
@@ -27,6 +32,7 @@ jobs:
           FAIL_THRESHOLD: 2 # failed runs in a row before you get a "down" email
           TIMEOUT_MS: 15000 # how long to wait for a site to respond
           TIMEZONE: UTC # time zone used in emails, e.g. Africa/Lagos or Europe/London
+          TEST_ALERT: ${{ inputs.test_alert && '1' || '' }}
         run: node check.mjs
 
       - name: Save state if it changed

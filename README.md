@@ -72,7 +72,11 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 
 ### 5. Test it
 
-**Actions** tab → **Uptime check** → **Run workflow**. To see an email, add a fake URL such as `https://this-does-not-exist-123.com` and run the workflow twice.
+**Actions** tab → **Uptime check** → **Run workflow**, tick **Send a test alert email only**, then **Run workflow**. You should get a "TEST: uptime alerts are working" email within a minute. No sites are checked and no state changes.
+
+If the run fails, its log says why: HTTP 404 means the n8n workflow isn't published (or the URL is wrong); 403 means `WEBHOOK_SECRET` doesn't match the Header Auth value in n8n.
+
+Run it again with the box unticked to check your sites right away.
 
 ## Settings
 

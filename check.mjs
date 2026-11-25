@@ -169,14 +169,18 @@ function buildMessage(events, now) {
   return { subject, text: lines.join('\n') };
 }
 
-async function notify(events, now) {
-  const payload = { ...buildMessage(events, now), events, checkedAt: now.toISOString(), runUrl: RUN_URL };
+const WEBHOOK_HINTS = {
+  401: 'WEBHOOK_SECRET does not match the Header Auth value in n8n',
+  403: 'WEBHOOK_SECRET does not match the Header Auth value in n8n',
+  404: 'is the n8n workflow published, and is N8N_WEBHOOK_URL its Production URL?',
+};
 
+async function sendToN8n(payload, what) {
   if (DRY_RUN) {
     console.log(`DRY_RUN: would send to n8n:\n${JSON.stringify(payload, null, 2)}`);
     return;
   }
-  if (!WEBHOOK_URL) throw new Error('N8N_WEBHOOK_URL is not set, so this alert could not be sent');
+  if (!WEBHOOK_URL) throw new Error(`N8N_WEBHOOK_URL is not set, so the ${what} could not be sent`);
 
   const headers = { 'content-type': 'application/json' };
   if (WEBHOOK_SECRET) headers['x-monitor-secret'] = WEBHOOK_SECRET;
@@ -186,12 +190,38 @@ async function notify(events, now) {
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(15000),
   });
-  if (!res.ok) throw new Error(`n8n webhook returned HTTP ${res.status}`);
-  console.log(`Sent ${events.length} change(s) to n8n`);
+  if (!res.ok) {
+    const hint = WEBHOOK_HINTS[res.status];
+    throw new Error(`n8n webhook returned HTTP ${res.status}${hint ? `: ${hint}` : ''}`);
+  }
+  console.log(`Sent ${what} to n8n`);
+}
+
+const notify = (events, now) =>
+  sendToN8n(
+    { ...buildMessage(events, now), events, checkedAt: now.toISOString(), runUrl: RUN_URL },
+    `${events.length} change(s)`,
+  );
+
+// Run by hand with "Send a test alert" ticked: proves GitHub -> n8n -> email works
+// without checking any site or touching state.json.
+async function sendTestAlert(now) {
+  const lines = [
+    'This is a test from your uptime check.',
+    'If you are reading this, down and back-up alerts will reach you.',
+    '',
+    `Sent ${formatTime(now.toISOString())}`,
+  ];
+  if (RUN_URL) lines.push(`Run details: ${RUN_URL}`);
+  await sendToN8n(
+    { subject: 'TEST: uptime alerts are working', text: lines.join('\n'), events: [], test: true, checkedAt: now.toISOString(), runUrl: RUN_URL },
+    'test alert',
+  );
 }
 
 async function main() {
   const now = new Date();
+  if (process.env.TEST_ALERT) return sendTestAlert(now);
   const sites = await loadSites();
   const previous = await loadState();
   const results = await Promise.all(sites.map(check));
