@@ -86,8 +86,8 @@ async function checkOnce(site) {
       redirect: 'follow',
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: {
-        // Browser-like headers: some firewalls block requests that look like bots.
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 uptime-check/1.0',
+        // Browser-like by default (some firewalls block bot-looking requests); a site can override it.
+        'user-agent': site.userAgent ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 uptime-check/1.0',
         accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'accept-language': 'en-AU,en;q=0.9',
       },
