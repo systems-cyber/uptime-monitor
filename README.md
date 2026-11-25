@@ -15,13 +15,18 @@ GitHub Actions checks your sites every 5 minutes. It only calls your n8n webhook
 
 ### 1. Create the repo
 
-Create a new **public** GitHub repo and add `check.mjs`, `sites.json` and `.github/workflows/uptime.yml`.
+Create a new **public** GitHub repo and add `check.mjs`, `sites.example.json` and `.github/workflows/uptime.yml`.
 
 Public, because Actions minutes are free for public repos. In a private repo every run is billed as at least 1 minute, so running every 5 minutes uses about 8,600 minutes a month. The free private allowance is 2,000.
 
 ### 2. List your sites
 
-Edit `sites.json`:
+The list is a JSON array (see `sites.example.json`). Put it in one of two places:
+
+- **Private (this repo uses this):** a repo secret called `SITES_JSON`. The public run logs then show `Site 01`, `Site 02`… in list order instead of domains. Your alert emails still use the real names.
+- **Public:** a `sites.json` file in the repo. Anyone can see it, and the logs show the names.
+
+If neither is set, the run fails, so a missing list can't go unnoticed.
 
 ```json
 [
@@ -36,9 +41,7 @@ Edit `sites.json`:
 | `url` | Required. |
 | `name` | Shown in emails. Defaults to the domain. |
 | `keyword` | Optional. The page must contain this text, which catches "200 OK but broken" pages. |
-| `expectStatus` | Optional. Requires this exact status code. Without it, any status under 400 counts as up. |
-
-**To keep the list private:** put the same JSON in a repo secret called `SITES_JSON` instead. It overrides `sites.json`. Site names still appear in the public run logs, so use neutral names if that matters.
+| `expectStatus` | Optional. A status code, or a list such as `[200, 403]`, that counts as up. Without it, any status under 400 counts as up. |
 
 ### 3. Build the n8n workflow (2 nodes)
 

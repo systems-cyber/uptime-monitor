@@ -36,17 +36,34 @@ const FRIENDLY_ERRORS = {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// SITES_JSON (a repo secret) wins over sites.json, so the list can stay out of a public repo.
+// In that case the (public) run logs show "Site 01", "Site 02"... instead of names.
+const PRIVATE_LIST = Boolean(process.env.SITES_JSON?.trim());
+
 async function loadSites() {
-  // SITES_JSON (a repo secret) wins over sites.json, so the list can stay out of a public repo.
-  const raw = process.env.SITES_JSON?.trim() || (await readFile(SITES_FILE, 'utf8'));
+  let raw = process.env.SITES_JSON?.trim();
+  if (!raw) {
+    try {
+      raw = await readFile(SITES_FILE, 'utf8');
+    } catch (err) {
+      if (err.code === 'ENOENT') throw new Error(`No sites to check: set the SITES_JSON secret or add ${SITES_FILE}`);
+      throw err;
+    }
+  }
   const list = JSON.parse(raw);
   if (!Array.isArray(list) || list.length === 0) throw new Error('Site list must be a non-empty JSON array');
-  return list.map((entry) => {
+  return list.map((entry, i) => {
     const site = typeof entry === 'string' ? { url: entry } : entry;
-    if (!site?.url) throw new Error(`Site entry has no "url": ${JSON.stringify(entry)}`);
+    if (!site?.url) throw new Error(`Site entry ${i + 1} has no "url"`);
+    const name = site.name || new URL(site.url).hostname;
+    if (PRIVATE_LIST && process.env.GITHUB_ACTIONS) {
+      // Ask GitHub to hide these values anywhere they would appear in the public log.
+      for (const secret of new Set([site.url, name, new URL(site.url).hostname])) console.log(`::add-mask::${secret}`);
+    }
     return {
       ...site,
-      name: site.name || new URL(site.url).hostname,
+      name,
+      label: PRIVATE_LIST ? `Site ${String(i + 1).padStart(2, '0')}` : name,
       // State is keyed by a hash so state.json never contains your URLs.
       id: createHash('sha256').update(`${site.url}|${site.keyword ?? ''}`).digest('hex').slice(0, 12),
     };
@@ -68,9 +85,14 @@ async function checkOnce(site) {
     const res = await fetch(site.url, {
       redirect: 'follow',
       signal: AbortSignal.timeout(TIMEOUT_MS),
-      headers: { 'user-agent': 'Mozilla/5.0 (compatible; uptime-check/1.0)' },
+      headers: {
+        // Browser-like headers: some firewalls block requests that look like bots.
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 uptime-check/1.0',
+        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'accept-language': 'en-AU,en;q=0.9',
+      },
     });
-    const statusOk = site.expectStatus ? res.status === site.expectStatus : res.status < 400;
+    const statusOk = site.expectStatus ? [].concat(site.expectStatus).includes(res.status) : res.status < 400;
     if (!statusOk) {
       await res.body?.cancel();
       return { ok: false, error: `HTTP ${res.status}` };
@@ -180,7 +202,7 @@ async function main() {
     const next = { status: prev.status, fails: prev.fails ?? 0, failingSince: prev.failingSince ?? null };
 
     if (result.ok) {
-      console.log(`UP    ${site.name} (HTTP ${result.status}, ${result.ms} ms)`);
+      console.log(`UP    ${site.label} (HTTP ${result.status}, ${result.ms} ms)`);
       if (prev.status === 'down') {
         events.push({
           type: 'recovered',
@@ -195,7 +217,7 @@ async function main() {
       next.fails = Math.min(next.fails + 1, FAIL_THRESHOLD); // capped so state.json stops changing during a long outage
       next.failingSince ??= now.toISOString();
       const confirmed = next.fails >= FAIL_THRESHOLD;
-      console.log(`FAIL  ${site.name} (${result.error})${confirmed ? '' : ` [${next.fails}/${FAIL_THRESHOLD}]`}`);
+      console.log(`FAIL  ${site.label} (${result.error})${confirmed ? '' : ` [${next.fails}/${FAIL_THRESHOLD}]`}`);
       if (prev.status !== 'down' && confirmed) {
         next.status = 'down';
         events.push({
