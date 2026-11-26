@@ -75,8 +75,8 @@
     },
     "40021c1f5f81": {
       "status": "up",
-      "fails": 0,
-      "failingSince": null,
+      "fails": 1,
+      "failingSince": "2026-11-26T23:25:17.832Z",
       "certWarned": null
     },
     "e01e901c8d8b": {
@@ -99,20 +99,20 @@
     },
     "59651cde28d3": {
       "status": "up",
-      "fails": 0,
-      "failingSince": null,
+      "fails": 1,
+      "failingSince": "2026-11-26T23:25:17.832Z",
       "certWarned": null
     },
     "008b4d36c83c": {
       "status": "up",
-      "fails": 0,
-      "failingSince": null,
+      "fails": 1,
+      "failingSince": "2026-11-26T23:25:17.832Z",
       "certWarned": null
     },
     "9e59f75c7f74": {
       "status": "up",
-      "fails": 0,
-      "failingSince": null,
+      "fails": 1,
+      "failingSince": "2026-11-26T23:25:17.832Z",
       "certWarned": null
     },
     "2df9c1db8a1d": {
