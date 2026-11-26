@@ -4,102 +4,122 @@
     "5eb261d5673e": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "07830f7e7d3c": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "f00b28c246ef": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "a8bac9447909": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "86c6fcb41924": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "15b0cca3fb6a": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "f3bd40561205": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "1485accb2a4e": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "a2d52e4ebbde": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "ab11af1622d6": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "ca072974b613": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "1e2d1f9f6797": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "40021c1f5f81": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "e01e901c8d8b": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "b03b9d41ab7d": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "60732ec6b10f": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "59651cde28d3": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "008b4d36c83c": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "9e59f75c7f74": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     },
     "2df9c1db8a1d": {
       "status": "up",
       "fails": 0,
-      "failingSince": null
+      "failingSince": null,
+      "certWarned": null
     }
   }
 }
