@@ -71,8 +71,11 @@ const ERROR_TITLES = [
   [/domain (name )?(is )?(for sale|parked)|parked domain|buy this domain|domain (has )?expired|this domain is available/i, 'Domain parking or for-sale page'],
   [/^(400|401|403|404|410|429|500|502|503|504)\b|page not found|404 not found|internal server error|bad gateway|service (temporarily )?unavailable|gateway time-?out/i, 'Error page'],
   [/under maintenance|maintenance mode|coming soon|under construction|site is offline/i, 'Maintenance or coming-soon page'],
-  [/^just a moment\.{0,3}$|attention required!? \| cloudflare|^access denied$/i, 'Bot check or access-denied page'],
+  [/^just a moment\.{0,3}$|attention required!? \| cloudflare|^access denied$|checking your browser|^one moment/i, 'Shown a bot check instead of the page', 'blocked'],
 ];
+// Firewalls and bot-protection software sometimes show data centres (like GitHub's) a short
+// "verifying your browser" page. Real visitors pass it, so it is not downtime.
+const CHALLENGE = /verif(y|ying|ied|ication)|checking (your|the) browser|just a moment|please wait|one moment|enable (javascript|cookies)|are you (a )?human|captcha|bot protection|ddos protection|security check/i;
 // Exact messages from WordPress and cPanel error pages. Checked only on short pages, so a
 // normal page (or blog post) that mentions one of these phrases doesn't trigger an alert.
 const ERROR_TEXTS = [
@@ -215,30 +218,44 @@ function redirectProblem(site, target) {
 }
 
 // Returns null when the response looks like the real website, or { kind, error, detail }.
-// `error` is safe for the public log; `detail` (page title, keyword) only goes in emails.
+// `error` is safe for the public log; `detail` (page title or text, keyword) only goes in emails.
+// kind 'blocked' means a bot check was shown instead of the page: inconclusive, never downtime.
+// `deep` marks problems that can sit past the first 10 KB, which is all the Australia check sees.
 function inspectResponse(site, { status, contentType = '', body = '', truncated = false, botCheck = false }) {
   const statusOk = site.expectStatus ? [].concat(site.expectStatus).includes(status) : status < 400;
-  if (!statusOk) return { kind: 'status', error: `HTTP ${status}${botCheck ? ' (blocked by a bot check)' : ''}` };
+  if (!statusOk) {
+    return botCheck
+      ? { kind: 'blocked', error: `Shown a bot check instead of the page (HTTP ${status})` }
+      : { kind: 'status', error: `HTTP ${status}` };
+  }
   if (status < 200 || status >= 300) return null; // an accepted non-2xx status (expectStatus): nothing more to read
 
   const minText = site.minText ?? MIN_TEXT;
   if (!body.trim()) return status === 204 || minText === 0 ? null : { kind: 'content', error: 'Page is blank (empty response)' };
   if (site.keyword && !body.includes(site.keyword) && !truncated) {
-    return { kind: 'content', error: 'Expected text not found on the page', detail: `Looked for "${site.keyword}"` };
+    return { kind: 'content', deep: true, error: 'Expected text not found on the page', detail: `Looked for "${site.keyword}"` };
   }
   if (!/html/i.test(contentType) && !/^\s*</.test(body)) return null; // not a web page (e.g. a JSON health check)
 
   const title = decode(body.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').replace(/\s+/g, ' ').trim();
-  for (const [pattern, label] of ERROR_TITLES) {
-    if (pattern.test(title)) return { kind: 'content', error: label, detail: `Page title: "${title.slice(0, 100)}"` };
+  for (const [pattern, label, kind = 'content'] of ERROR_TITLES) {
+    if (pattern.test(title)) return { kind, error: label, detail: `Page title: "${title.slice(0, 100)}"` };
   }
-  if (PHP_FATAL.test(body)) return { kind: 'content', error: 'PHP fatal error printed on the page' };
+  if (PHP_FATAL.test(body)) return { kind: 'content', deep: true, error: 'PHP fatal error printed on the page' };
   const text = visibleText(body);
   if (text.length < 3000) {
     for (const [pattern, label] of ERROR_TEXTS) if (pattern.test(text)) return { kind: 'content', error: label };
   }
   if (!truncated && text.length < minText && !isAppShell(body)) {
-    return { kind: 'content', error: text.length ? `Page is nearly blank (${text.length} characters of text)` : 'Page is blank' };
+    const detail = text ? `Page text: "${text.slice(0, 150)}"` : null;
+    if (CHALLENGE.test(`${title} ${text}`) || /<meta[^>]+http-equiv=["']?refresh/i.test(body)) {
+      return { kind: 'blocked', error: 'Shown a bot check instead of the page', detail };
+    }
+    // Some text but very little is often a firewall page shown only to data centres, so it
+    // needs the Australia check to agree before it counts (needsSecondOpinion).
+    return text.length
+      ? { kind: 'content', needsSecondOpinion: true, error: `Page is nearly blank (${text.length} characters of text)`, detail }
+      : { kind: 'content', error: 'Page is blank', detail };
   }
   return null;
 }
@@ -257,11 +274,15 @@ async function checkAppScripts(site, html, pageUrl, signal) {
   for (const script of appScripts(html, pageUrl, site)) {
     const res = await fetch(script, { signal, headers: { 'user-agent': site.userAgent ?? DEFAULT_USER_AGENT } });
     const type = res.headers.get('content-type') ?? '';
-    const size = (await res.arrayBuffer()).byteLength;
+    const content = await res.text();
+    if (/html/i.test(type) && content.length < 20000 && CHALLENGE.test(visibleText(content))) {
+      return { kind: 'blocked', error: 'Shown a bot check instead of the app script' };
+    }
     // A missing file often comes back as the HTML page with status 200, which breaks the app just the same.
-    if (!res.ok || /html/i.test(type) || size === 0) {
-      const got = !res.ok ? `HTTP ${res.status}` : size === 0 ? 'an empty file' : 'a web page instead of JavaScript';
-      return { kind: 'content', error: "The site's app script fails to load, so visitors see a blank page", detail: `${script.pathname} returned ${got}` };
+    // Only GitHub loads scripts, so the Australia check can't clear this problem (githubOnly).
+    if (!res.ok || /html/i.test(type) || content.length === 0) {
+      const got = !res.ok ? `HTTP ${res.status}` : content.length === 0 ? 'an empty file' : 'a web page instead of JavaScript';
+      return { kind: 'content', githubOnly: true, error: "The site's app script fails to load, so visitors see a blank page", detail: `${script.pathname} returned ${got}` };
     }
   }
   return null;
@@ -400,7 +421,7 @@ async function checkFromAustraliaOnce(site, url) {
         botCheck: headerValue(r.headers, 'cf-mitigated') === 'challenge',
       });
       if (problem) return { ok: false, where, status: r.statusCode, ...problem };
-      return { ok: true, where, status: r.statusCode, ms: r.timings?.total };
+      return { ok: true, where, status: r.statusCode, ms: r.timings?.total, truncated: r.truncated };
     }
     return { ok: false, kind: 'status', error: 'Too many redirects' };
   } catch (err) {
@@ -447,14 +468,19 @@ async function checkSite(site) {
   let problem = null;
   let detail = null;
   if (!dns.ok) problem = dns.error;
-  // If only GitHub (US) can't connect or is blocked, but Australia gets the real site, visitors
-  // are fine: some sites block or geo-fence overseas data centres. Content problems still count.
-  const australiaVouches = australia.ok && ['network', 'status', 'redirect'].includes(github.kind);
-  if (!problem && !github.ok && !australiaVouches) {
+  // If GitHub (US) has a problem but Australia gets the real page, visitors are fine: firewalls
+  // and bot protection often treat overseas data centres differently. The exception is a problem
+  // that can sit past the first 10 KB, which is all Australia sees of a long page, or one only
+  // GitHub checks (the app's script files).
+  const australiaVouches = australia.ok && !github.githubOnly && !(github.deep && australia.truncated);
+  // A bot check shown to GitHub is never downtime on its own: real visitors get past it.
+  // A nearly blank page only counts if Australia sees a problem too.
+  const inconclusive = github.kind === 'blocked' || (github.needsSecondOpinion && australia.ok !== false);
+  if (!problem && !github.ok && !australiaVouches && !inconclusive) {
     problem = github.error;
     detail = github.detail ?? null;
   }
-  if (!problem && australia.ok === false && australia.confirmed) {
+  if (!problem && australia.ok === false && australia.confirmed && australia.kind !== 'blocked') {
     problem = `Not working from Australia: ${australia.error}`;
     detail = australia.detail ?? null;
   }
@@ -478,7 +504,13 @@ function logLine(site, r, suffix = '') {
   if (r.certExpires) parts.push(`SSL: ${Math.floor((r.certExpires - Date.now()) / 86_400_000)} days left`);
   const head = r.down ? `FAIL  ${site.label}  ${r.problem}${suffix}` : `UP    ${site.label}`;
   console.log(`${head}\n        ${parts.join(' | ')}`);
-  if (!r.down && !r.github.ok) console.log('        Counted as up: it works from Australia, where visitors are.');
+  if (!r.down && !r.github.ok) {
+    console.log(r.australia.ok
+      ? '        Counted as up: it works from Australia, where visitors are.'
+      : r.github.kind === 'blocked'
+        ? '        Counted as up: GitHub was shown a bot check, which real visitors get past (no Australian result to compare).'
+        : '        Counted as up for now: only GitHub saw this, and there is no Australian result to confirm it.');
+  }
   if (r.australia.note) console.log(`        Note: ${r.australia.note}.`);
 }
 
