@@ -74,9 +74,9 @@
       "certWarned": null
     },
     "40021c1f5f81": {
-      "status": "down",
-      "fails": 2,
-      "failingSince": "2026-11-26T23:45:10.832Z",
+      "status": "up",
+      "fails": 0,
+      "failingSince": null,
       "certWarned": null
     },
     "e01e901c8d8b": {
@@ -98,21 +98,21 @@
       "certWarned": null
     },
     "59651cde28d3": {
-      "status": "down",
-      "fails": 2,
-      "failingSince": "2026-11-26T23:45:10.832Z",
+      "status": "up",
+      "fails": 0,
+      "failingSince": null,
       "certWarned": null
     },
     "008b4d36c83c": {
-      "status": "down",
-      "fails": 2,
-      "failingSince": "2026-11-26T23:45:10.832Z",
+      "status": "up",
+      "fails": 0,
+      "failingSince": null,
       "certWarned": null
     },
     "9e59f75c7f74": {
-      "status": "down",
-      "fails": 2,
-      "failingSince": "2026-11-26T23:45:10.832Z",
+      "status": "up",
+      "fails": 0,
+      "failingSince": null,
       "certWarned": null
     },
     "2df9c1db8a1d": {
