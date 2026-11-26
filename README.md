@@ -87,13 +87,27 @@ These are in `.github/workflows/uptime.yml`:
 - `TIMEOUT_MS: 15000`: how long to wait for a response
 - `TIMEZONE: UTC`: time zone used in emails, e.g. `Africa/Lagos` or `Europe/London`
 
+## Run checks on time with cron-job.org
+
+GitHub's `cron` schedule is best effort, and on a new repo it can be very sparse: this repo got 2 scheduled runs in its first 21 hours instead of about 250. A free external scheduler fixes that by starting the workflow every 5 minutes. Keep the GitHub `cron` line as a backup.
+
+1. **Make a GitHub token** (as the account that owns the repo): **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+   - Repository access: **Only select repositories** → this repo
+   - Repository permissions: **Actions: Read and write** (nothing else)
+   - Copy the token. GitHub shows it only once.
+2. **Create the job** at [cron-job.org](https://cron-job.org) (free account) → **Create cronjob**:
+   - URL: `https://api.github.com/repos/OWNER/REPO/actions/workflows/uptime.yml/dispatches`
+   - Schedule: every 5 minutes
+   - **Advanced** tab:
+     - Request method: `POST`
+     - Headers: `Authorization: Bearer <your token>` and `Accept: application/vnd.github+json`
+     - Request body: `{"ref":"main"}`
+   - Turn on cron-job.org's email notification for failed executions.
+3. Click **Test run**. GitHub answers **204** and a new run appears in the Actions tab.
+
+When the token expires, GitHub starts answering 401 and cron-job.org emails you. Make a new token and paste it into the job.
+
 ## Limits to know
 
-- **GitHub's schedule is best effort.** Runs often start 5–30 minutes late and are occasionally skipped. If you need checks on time, use a free external scheduler such as [cron-job.org](https://cron-job.org) to start the workflow every 5 minutes:
-  - `POST https://api.github.com/repos/OWNER/REPO/actions/workflows/uptime.yml/dispatches`
-  - Headers: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`
-  - Body: `{"ref":"main"}`
-  - Token: a fine-grained personal access token limited to this repo, with **Actions: Read and write**.
-  - Keep the GitHub `cron` line as a backup.
 - **60-day rule:** GitHub turns off schedules in public repos that have no activity for 60 days. The script updates `state.json` once a week to prevent that.
 - **One location:** checks run from GitHub's servers, mostly in the US. Some sites with strict bot protection return 403 to data-centre IPs. If that happens, set `expectStatus: 403` for that site or check a health URL instead.
