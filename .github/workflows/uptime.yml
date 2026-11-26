@@ -9,6 +9,10 @@ on:
         description: 'Send a test alert email only (checks no sites)'
         type: boolean
         default: false
+      dry_run:
+        description: 'Check the sites and show results only (no emails, nothing saved)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write # needed to save state.json back to the repo
@@ -20,7 +24,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v5
 
@@ -29,10 +33,14 @@ jobs:
           N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           SITES_JSON: ${{ secrets.SITES_JSON }} # optional: overrides sites.json
+          GLOBALPING_TOKEN: ${{ secrets.GLOBALPING_TOKEN }} # optional: raises the Australia check's free limit
           FAIL_THRESHOLD: 2 # failed runs in a row before you get a "down" email
+          MIN_DOWN_MINUTES: 3 # ...and the first and last failure must be at least this far apart
           TIMEOUT_MS: 15000 # how long to wait for a site to respond
+          CERT_WARN_DAYS: 14 # email this many days before an SSL certificate expires
           TIMEZONE: UTC # time zone used in emails, e.g. Africa/Lagos or Europe/London
           TEST_ALERT: ${{ inputs.test_alert && '1' || '' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: node check.mjs
 
       - name: Save state if it changed
