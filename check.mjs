@@ -335,9 +335,10 @@ const globalping = (path, options = {}) =>
 const headerValue = (headers, name) => [].concat(headers?.[name] ?? []).join(', ');
 
 function rawError(raw = '') {
-  if (/timeout/i.test(raw)) return 'No response in time';
   const code = Object.keys(FRIENDLY_ERRORS).find((c) => raw.includes(c));
-  return code ? FRIENDLY_ERRORS[code] : raw.split('\n')[0].slice(0, 120) || 'Request failed';
+  if (code) return FRIENDLY_ERRORS[code];
+  if (/time(d)? ?out/i.test(raw)) return 'No response in time';
+  return raw.split('\n')[0].slice(0, 120) || 'Request failed';
 }
 
 // One request from a random Australian test location, preferring home/office connections
