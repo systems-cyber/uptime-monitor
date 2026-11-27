@@ -111,8 +111,8 @@
     },
     "9e59f75c7f74": {
       "status": "up",
-      "fails": 0,
-      "failingSince": null,
+      "fails": 1,
+      "failingSince": "2026-11-27T14:40:12.920Z",
       "certWarned": null
     },
     "2df9c1db8a1d": {
