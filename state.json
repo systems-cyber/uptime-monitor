@@ -99,8 +99,8 @@
     },
     "59651cde28d3": {
       "status": "up",
-      "fails": 0,
-      "failingSince": null,
+      "fails": 1,
+      "failingSince": "2026-11-27T05:10:11.588Z",
       "certWarned": null
     },
     "008b4d36c83c": {
