@@ -39,8 +39,8 @@
     },
     "f3bd40561205": {
       "status": "up",
-      "fails": 1,
-      "failingSince": "2026-11-27T05:30:13.431Z",
+      "fails": 0,
+      "failingSince": null,
       "certWarned": null
     },
     "1485accb2a4e": {
