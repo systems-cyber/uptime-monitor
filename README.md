@@ -4,7 +4,7 @@ GitHub Actions checks your sites every 5 minutes. It only calls your n8n webhook
 
 ## How it behaves
 
-- A site counts as **down** after 2 failed runs in a row, and the "down" email goes out in that second run. The two failures must be at least 3 minutes apart, so two runs that happen to start a minute apart can't alert on a brief blip. With checks every 5 minutes, you hear about an outage 5–10 minutes after it starts.
+- A site counts as **down** only once it has failed every check for **15 minutes in a row**. With checks every 5 minutes that's 4 failed checks; one successful check restarts the clock. The "down" email goes out in the run that reaches 15 minutes, so you hear about a real outage 15–20 minutes after it starts, and short blips never email you.
 - You get one email per outage, not one every 5 minutes. When the site comes back, you get a **back up** email with how long it was down.
 - If several sites change in the same run, you get one email that lists them all.
 - If n8n can't be reached, the run fails and GitHub emails you about the failed run. The alert is tried again on the next run.
@@ -103,8 +103,8 @@ Run it again with the box unticked to check your sites right away. Tick **Check 
 These are in `.github/workflows/uptime.yml`:
 
 - `cron: '*/5 * * * *'`: how often to check (5 minutes is GitHub's minimum)
-- `FAIL_THRESHOLD: 2`: failed runs in a row before a "down" email
-- `MIN_DOWN_MINUTES: 3`: the first and last of those failures must be at least this far apart
+- `MIN_DOWN_MINUTES: 15`: how long a site must keep failing before a "down" email
+- `FAIL_THRESHOLD: 2`: the least number of failed checks in a row that can count (matters only if runs are far apart)
 - `TIMEOUT_MS: 15000`: how long to wait for a response
 - `CERT_WARN_DAYS: 14`: days of warning before an SSL certificate expires
 - `TIMEZONE: UTC`: time zone used in emails, e.g. `Africa/Lagos` or `Europe/London`

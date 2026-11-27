@@ -34,8 +34,8 @@ jobs:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           SITES_JSON: ${{ secrets.SITES_JSON }} # optional: overrides sites.json
           GLOBALPING_TOKEN: ${{ secrets.GLOBALPING_TOKEN }} # optional: raises the Australia check's free limit
-          FAIL_THRESHOLD: 2 # failed runs in a row before you get a "down" email
-          MIN_DOWN_MINUTES: 3 # ...and the first and last failure must be at least this far apart
+          MIN_DOWN_MINUTES: 15 # a site must fail every check for this long before you get a "down" email
+          FAIL_THRESHOLD: 2 # ...and at least this many checks in a row
           TIMEOUT_MS: 15000 # how long to wait for a site to respond
           CERT_WARN_DAYS: 14 # email this many days before an SSL certificate expires
           TIMEZONE: UTC # time zone used in emails, e.g. Africa/Lagos or Europe/London

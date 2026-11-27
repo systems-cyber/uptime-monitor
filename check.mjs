@@ -9,9 +9,9 @@
 //   3. The same page from a home/office internet connection in Australia (Globalping), where
 //      most visitors are. A failure there is re-tested from a second location before it counts.
 //   4. When the SSL certificate expires, with a warning email CERT_WARN_DAYS ahead.
-// A site counts as down after FAIL_THRESHOLD failed runs in a row, the first and last at least
-// MIN_DOWN_MINUTES apart, and the "down" email goes out in that run. n8n is only called when
-// something changes. No dependencies: needs Node 20+ (GitHub's runners have it).
+// A site counts as down only once it has failed every check for MIN_DOWN_MINUTES (15) in a row;
+// one successful check restarts the clock. The "down" email goes out in the run that reaches
+// 15 minutes. n8n is only called when something changes. No dependencies: needs Node 20+.
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -21,8 +21,9 @@ import tls from 'node:tls';
 const env = process.env;
 const num = (value, fallback) => (value === undefined || value === '' ? fallback : Number(value));
 
-const FAIL_THRESHOLD = Math.max(1, num(env.FAIL_THRESHOLD, 2)); // failed runs in a row before "down"
-const MIN_DOWN_MS = num(env.MIN_DOWN_MINUTES, 3) * 60_000; // stops two runs a minute apart from alerting on a blip
+const FAIL_THRESHOLD = Math.max(1, num(env.FAIL_THRESHOLD, 2)); // at least this many failed runs in a row...
+const MIN_DOWN_MS = num(env.MIN_DOWN_MINUTES, 15) * 60_000; // ...covering at least this long, before "down"
+const SCHEDULE_SLACK_MS = 60_000; // runs start a few seconds early or late; don't make a 14:58 streak wait another run
 const TIMEOUT_MS = num(env.TIMEOUT_MS, 15000);
 const RETRY_DELAY_MS = num(env.RETRY_DELAY_MS, 5000); // wait before re-checking a failed site in the same run
 const MIN_TEXT = num(env.MIN_TEXT, 100); // a page with less visible text than this counts as blank
@@ -668,13 +669,10 @@ async function main() {
       next.fails = Math.min(next.fails + 1, FAIL_THRESHOLD); // capped so state.json stops changing during a long outage
       next.failingSince ??= now.toISOString();
       const failingFor = now - new Date(next.failingSince);
-      const confirmed = next.fails >= FAIL_THRESHOLD && (FAIL_THRESHOLD === 1 || failingFor >= MIN_DOWN_MS);
-      let suffix = '';
-      if (prev.status !== 'down' && !confirmed) {
-        suffix = next.fails < FAIL_THRESHOLD
-          ? ` [${next.fails}/${FAIL_THRESHOLD}]`
-          : ` [alert once it has failed for ${MIN_DOWN_MS / 60000} min]`;
-      }
+      const confirmed = next.fails >= FAIL_THRESHOLD && failingFor >= Math.max(0, MIN_DOWN_MS - SCHEDULE_SLACK_MS);
+      const suffix = prev.status !== 'down' && !confirmed
+        ? ` [failing for ${formatDuration(failingFor)}; alert only if still failing at ${MIN_DOWN_MS / 60000}m]`
+        : '';
       logLine(site, r, suffix);
       if (prev.status !== 'down' && confirmed) {
         next.status = 'down';
