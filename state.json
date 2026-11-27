@@ -33,8 +33,8 @@
     },
     "15b0cca3fb6a": {
       "status": "up",
-      "fails": 1,
-      "failingSince": "2026-11-27T19:05:10.414Z",
+      "fails": 0,
+      "failingSince": null,
       "certWarned": null
     },
     "f3bd40561205": {
